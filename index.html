@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lumora NOVA</title>
+<style>
+:root{--bg:#0b0b12;--panel:#151525;--purple:#6c63ff;--violet:#8b5cf6;--blue:#38bdf8;--text:#f8fafc;--muted:#a5a7b8}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0%,#17132d 0,#0b0b12 42%);color:var(--text);font-family:Inter,system-ui,Arial,sans-serif;min-height:100vh}
+main{max-width:900px;margin:auto;padding:28px 16px 40px}.brand{display:flex;align-items:center;gap:12px;margin-bottom:24px}.logo{width:44px;height:44px;border-radius:14px;background:#fff;color:#6c63ff;display:grid;place-items:center;font-size:25px;font-weight:900}.brand b{font-size:21px}.brand span{display:block;color:var(--muted);font-size:12px}
+.hero{padding:18px 0 24px}.hero h1{font-size:clamp(34px,8vw,64px);line-height:1;margin:0 0 12px}.gradient{background:linear-gradient(90deg,#fff,#a78bfa,#38bdf8);-webkit-background-clip:text;background-clip:text;color:transparent}.hero p{color:var(--muted);max-width:650px}
+.card{background:rgba(21,21,37,.82);border:1px solid #292941;border-radius:24px;padding:14px;backdrop-filter:blur(14px);box-shadow:0 20px 60px rgba(0,0,0,.25)}
+textarea{width:100%;min-height:120px;resize:vertical;border:0;outline:0;border-radius:17px;background:#0f0f1b;color:var(--text);padding:16px;font:inherit}.row{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}.toggle{display:flex;align-items:center;gap:8px;color:#c5c7d4;font-size:14px}button{border:0;border-radius:14px;background:linear-gradient(135deg,var(--purple),var(--violet));color:white;padding:12px 18px;font-weight:800;cursor:pointer}button:disabled{opacity:.55;cursor:wait}
+.status{display:none;gap:8px;align-items:center;color:#b9b6ff;font-size:14px;margin:16px 2px}.dot{width:8px;height:8px;border-radius:50%;background:var(--blue);animation:pulse 1s infinite}@keyframes pulse{50%{opacity:.25;transform:scale(.7)}}
+.answer{margin-top:16px;white-space:pre-wrap;line-height:1.7;color:#eef0f7}.sources{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.sources a{color:#c4bfff;background:#20203a;padding:8px 10px;border-radius:999px;text-decoration:none;font-size:12px}
+footer{color:#6f7181;text-align:center;margin-top:28px;font-size:12px}
+</style>
+</head>
+<body>
+<main>
+  <div class="brand"><div class="logo">N</div><div><b>Lumora</b><span>NOVA AI</span></div></div>
+  <section class="hero"><h1>Think deeper.<br><span class="gradient">Find more.</span></h1><p>Ask NOVA anything. Turn on Web Search when you need fresh information and sources.</p></section>
+  <section class="card">
+    <textarea id="prompt" placeholder="Ask NOVA anything..."></textarea>
+    <div class="row">
+      <label class="toggle"><input id="search" type="checkbox" checked> Web Search</label>
+      <button id="send">Ask NOVA</button>
+    </div>
+    <div class="status" id="status"><i class="dot"></i><span id="statusText">Searching the web…</span></div>
+    <div class="answer" id="answer"></div>
+    <div class="sources" id="sources"></div>
+  </section>
+  <footer>Lumora Labs · NOVA</footer>
+</main>
+<script>
+const promptEl=document.getElementById("prompt"),send=document.getElementById("send"),answer=document.getElementById("answer"),sources=document.getElementById("sources"),status=document.getElementById("status"),statusText=document.getElementById("statusText"),search=document.getElementById("search");
+send.onclick=async()=>{
+ const message=promptEl.value.trim(); if(!message)return;
+ send.disabled=true; answer.textContent=""; sources.innerHTML=""; status.style.display="flex";
+ const phases=search.checked?["Searching the web…","Reading relevant sources…","Synthesizing the answer…"]:["Thinking…","Writing the answer…"];
+ let i=0; statusText.textContent=phases[0]; const timer=setInterval(()=>{i=(i+1)%phases.length;statusText.textContent=phases[i]},1400);
+ try{
+  const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message,webSearch:search.checked})});
+  const data=await r.json(); if(!r.ok)throw new Error(data.error||"Request failed");
+  answer.textContent=data.reply||"No response.";
+  (data.sources||[]).forEach(s=>{const a=document.createElement("a");a.href=s.url;a.target="_blank";a.rel="noopener";a.textContent=s.title;a.title=s.url;sources.appendChild(a)});
+ }catch(e){answer.textContent="Error: "+e.message}
+ finally{clearInterval(timer);status.style.display="none";send.disabled=false}
+};
+promptEl.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key==="Enter")send.click()});
+</script>
+</body>
+</html>
